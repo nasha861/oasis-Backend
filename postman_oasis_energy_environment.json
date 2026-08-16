@@ -1,0 +1,10 @@
+{
+  "id": "oasis-energy-env",
+  "name": "Oasis Energy Local",
+  "values": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "enabled": true },
+    { "key": "authToken", "value": "", "enabled": true }
+  ],
+  "timestamp": 0,
+  "synced": false
+}
