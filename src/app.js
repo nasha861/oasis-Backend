@@ -2,7 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+const paymentRoutes = require("./routes/paymentRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
+  
 const app = express();
 
 app.use(cors());
@@ -27,6 +30,9 @@ app.use('/api/system-packages', require('./routes/systemPackageRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/project', require('./routes/projectRoute'));
 app.use('/api/energy', require('./routes/energyRoutes'));
+app.use("/api/orders", require('./routes/orderRoutes'));
+
+app.use("/api/payments", paymentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
