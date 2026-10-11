@@ -1,4 +1,4 @@
-const Project = require('../models/Project');
+const Project = require('../models/project');
 const createCrudController = require('./crudController');
 
 module.exports = createCrudController(Project, {
