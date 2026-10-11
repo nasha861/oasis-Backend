@@ -1,7 +1,7 @@
 const express = require('express');
 
 const roleMiddleware = require('../middleware/roleMiddleware');
-console.log('ROLE MIDDLEWARE:', roleMiddleware);
+
 
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
