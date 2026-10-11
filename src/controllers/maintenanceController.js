@@ -25,6 +25,64 @@ const controller = createCrudController(Maintenance, {
   searchableFields: ['completionNotes']
 });
 
+controller.create = async (req, res) => {
+  try {
+    const { installation, package: maintenancePackage, type, description } = req.body;
+
+    if (!installation || !maintenancePackage || !type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Installation, package, and type are required'
+      });
+    }
+
+    const installationRecord = await Installation.findById(installation);
+
+    if (!installationRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'Installation not found'
+      });
+    }
+
+    // Customers may only submit requests for their own installations.
+    if (req.user.role === 'customer') {
+      const customer = await Customer.findOne({
+        user: req.user._id
+      });
+
+      if (
+        !customer ||
+        String(installationRecord.customer) !== String(customer._id)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'You cannot request maintenance for this installation'
+        });
+      }
+    }
+
+    const document = await Maintenance.create({
+      installation: installationRecord._id,
+      package: maintenancePackage,
+      type,
+      description
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: document,
+      message: 'Maintenance request created successfully'
+    });
+  } catch (error) {
+    console.error('Create maintenance request error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create maintenance request'
+    });
+  }
+};
 controller.getMyMaintenance = async (req, res) => {
   try {
     const customer = await Customer.findOne({

@@ -50,22 +50,20 @@ router.put(
 const crudRouter = createCrudRoutes(
   controller,
   {
+    // Only administrators can list or view all maintenance records.
+    readRoles: ['admin'],
+
+    // Customers can submit requests; admins can also create them.
     createRoles: ['admin', 'customer'],
 
-    updateRoles: [
-      'admin',
-      'technician'
-    ],
-
+    // Admins manage records; technicians use the assignment-checked endpoint.
+    updateRoles: ['admin'],
+    // Only administrators can delete records.
     deleteRoles: ['admin'],
-
-    validators:
-      modelValidators.maintenance
+    validators: modelValidators.maintenance
   }
 );
-
 router.use(crudRouter);
-
 
 /* ==========================================
    EXISTING SPECIAL ROUTES
