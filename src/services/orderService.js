@@ -8,8 +8,15 @@ const createOrder = async (orderData) => {
 };
 
 // Get all orders
-const getAllOrders = async () => {
-  const orders = await Order.find()
+const getAllOrders = async (userId, role) => {
+  let query = {};
+
+  // Customers can only see their own orders
+  if (role === "customer") {
+    query.userId = userId;
+  }
+
+  const orders = await Order.find(query)
     .populate("userId", "name email")
     .populate("items.productId");
 
@@ -17,8 +24,15 @@ const getAllOrders = async () => {
 };
 
 // Get one order by ID
-const getOrderById = async (orderId) => {
-  const order = await Order.findById(orderId)
+const getOrderById = async (orderId, userId, role) => {
+  let query = { _id: orderId };
+
+  // Customers can only view their own order
+  if (role === "customer") {
+    query.userId = userId;
+  }
+
+  const order = await Order.findOne(query)
     .populate("userId", "name email")
     .populate("items.productId");
 

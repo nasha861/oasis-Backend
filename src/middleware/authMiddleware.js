@@ -35,8 +35,15 @@ const protect = asyncHandler(async (req, res, next) => {
         throw new Error('Not authorized, user not found');
     }
 
-    req.user = user;
-    next();
+   req.user = user;
+
+        console.log("AUTH USER:", {
+            id: req.user._id,
+            email: req.user.email,
+            role: req.user.role
+        });
+
+        next();
 });
 
 module.exports = { protect };

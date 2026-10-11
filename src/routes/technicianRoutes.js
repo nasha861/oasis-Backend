@@ -3,6 +3,7 @@ const createCrudRoutes = require('./crudRoutes');
 const { modelValidators } = require('../middleware/validators');
 
 module.exports = createCrudRoutes(controller, {
-  writeRoles: ['admin', 'technician'],
+  readRoles: ['admin'],
+  writeRoles: ['admin'],
   validators: modelValidators.technician
 });

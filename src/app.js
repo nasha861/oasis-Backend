@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const paymentRoutes = require("./routes/paymentRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const quoteRoutes = require("./routes/quoteRoutes");
 
   
 const app = express();
@@ -25,12 +26,14 @@ app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/technicians', require('./routes/technicianRoutes'));
 app.use('/api/installations', require('./routes/installationRoutes'));
 app.use('/api/maintenance', require('./routes/maintenanceRoutes'));
+app.use('/api/services', require('./routes/serviceRoutes'));
 app.use('/api/solar-products', require('./routes/solarProductRoutes'));
 app.use('/api/system-packages', require('./routes/systemPackageRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/project', require('./routes/projectRoute'));
 app.use('/api/energy', require('./routes/energyRoutes'));
 app.use("/api/orders", require('./routes/orderRoutes'));
+app.use("/api/quotes", quoteRoutes);
 
 app.use("/api/payments", paymentRoutes);
 

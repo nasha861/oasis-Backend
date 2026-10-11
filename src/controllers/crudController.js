@@ -6,6 +6,9 @@ const createCrudController = (Model, options = {}) => {
   const searchableFields = options.searchableFields || [];
   const filterFields = options.filterFields || [];
 
+  // Automatically use the logged-in user when enabled
+  const autoSetUser = options.autoSetUser !== false;
+
   const applyPopulate = (query) => {
     populate.forEach((path) => {
       query.populate(path);
@@ -20,14 +23,20 @@ const createCrudController = (Model, options = {}) => {
 
       const userId = req.user?._id;
 
-        ['user', 'author', 'owner', 'createdBy'].forEach(field => {
-          if (Model.schema.paths[field] && userId) {
-            data[field] = userId;
-          }
-        });
-        if (!userId) {
-          console.log('CRUD create: no authenticated user available for', Model.modelName);
-        }
+if (autoSetUser) {
+  ['user', 'author', 'owner', 'createdBy'].forEach(field => {
+    if (Model.schema.paths[field] && userId) {
+      data[field] = userId;
+    }
+  });
+
+  if (!userId) {
+    console.log(
+      'CRUD create: no authenticated user available for',
+      Model.modelName
+    );
+  }
+}
       
 
       const document = await Model.create(data);

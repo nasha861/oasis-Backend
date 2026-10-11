@@ -26,10 +26,15 @@ const modelValidators = {
     body('currentLocation.lng').optional().isFloat({ min: -180, max: 180 }).withMessage('Longitude is invalid')
   ],
   installation: [
-    body('customer').optional().isMongoId().withMessage('Customer must be a valid id'),
-    body('systemPackage').optional().isMongoId().withMessage('System package must be a valid id'),
-    body('technicians').optional().isArray().withMessage('Technicians must be an array'),
-    body('status').optional().isIn(['survey', 'permitting', 'installing', 'active']).withMessage('Invalid installation status')
+  body('customer').optional().isMongoId().withMessage('Customer must be a valid id'),
+  body('systemPackage').optional().isMongoId().withMessage('System package must be a valid id'),
+  body('technicians').optional().isArray().withMessage('Technicians must be an array'),
+  body('status').optional().isIn(['survey', 'pending', 'in-progress', 'completed']).withMessage('Invalid installation status'),
+  body('geoCoordinates.lat').optional().isFloat({ min: -90, max: 90 }).withMessage('Latitude is invalid'),
+  body('geoCoordinates.lng').optional().isFloat({ min: -180, max: 180 }).withMessage('Longitude is invalid'),
+  body('installationDate').optional().isISO8601().withMessage('Installation date must be valid'),
+  body('address').optional().trim().notEmpty().withMessage('Address cannot be empty'),
+  body('note').optional().trim()
   ],
   maintenance: [
     body('installation').optional().isMongoId().withMessage('Installation must be a valid id'),

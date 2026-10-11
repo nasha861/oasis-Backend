@@ -40,9 +40,12 @@ const registerUser = asyncHandler(async (req, res) => {
     await Customer.create({ user: user._id, phoneNumber, billingAddress });
   }
 
-  if (role === 'technician') {
-    await Technician.create({ user: user._id });
-  }
+ if (role === 'technician') {
+  await Technician.create({
+    user: user._id,
+    phone: phoneNumber
+  });
+}
 
   sendSuccess(res, toUserResponse(user), 'Registration successful', 201);
 });

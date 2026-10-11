@@ -27,7 +27,10 @@ const createOrder = async (req, res) => {
 // Get All Orders
 const getAllOrders = async (req, res) => {
   try {
-    const orders = await orderService.getAllOrders();
+    const orders = await orderService.getAllOrders(
+  req.user._id,
+  req.user.role
+);
 
     res.status(200).json({
       success: true,
@@ -47,7 +50,11 @@ const getAllOrders = async (req, res) => {
 // Get Order By ID
 const getOrderById = async (req, res) => {
   try {
-    const order = await orderService.getOrderById(req.params.id);
+   const order = await orderService.getOrderById(
+  req.params.id,
+  req.user._id,
+  req.user.role
+);
 
     if (!order) {
       return res.status(404).json({
