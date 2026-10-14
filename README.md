@@ -100,9 +100,29 @@ Configure the variables required by your application. These may include:
 
 Check the backend configuration to confirm the exact variable names. Never commit real credentials or secret keys to GitHub.
 
-## API Testing
+## API Testing with Postman
 
-Postman can be used to test the API endpoints. If you use the included Postman collection, configure the required base URL and authentication token before making protected requests.
+The repository includes a Postman collection for testing the OasisEnergy API locally.
+
+### Import the collection
+
+1. Download the Postman collection JSON file from this repository.
+2. Open Postman and select **Import**.
+3. Import the downloaded JSON file.
+4. Create or select an environment with these variables:
+
+   | Variable | Example value |
+   |---|---|
+   | `baseUrl` | `http://localhost:5000` |
+   | `authToken` | Leave empty initially |
+
+5. Start the backend with `npm start`.
+6. Send the Health request to confirm that the API is responding.
+7. Register a test customer or log in, then use the returned token for protected requests.
+
+The collection currently includes health-check, authentication, profile, and customer requests. Additional endpoints can be documented as the API testing collection grows.
+
+**Security:** Use test accounts and never commit real authentication tokens, passwords, or API secrets.
 
 ## Frontend
 
