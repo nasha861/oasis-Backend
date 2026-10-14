@@ -55,13 +55,19 @@ backend/
 
 ### Installation
 
+**Prerequisites**
+- Node.js and npm
+- A MongoDB database
+
+**Setup**
+
 1. Clone the repository:
 
    ```bash
    git clone https://github.com/nasha861/oasis-Backend.git
    ```
 
-2. Navigate into the repository:
+2. Navigate to the project directory:
 
    ```bash
    cd oasis-Backend
@@ -73,9 +79,15 @@ backend/
    npm install
    ```
 
-4. Configure the environment variables required by the application.
+4. Configure the environment variables required by the application in a local `.env` file. Do not commit this file to GitHub.
 
-5. Start the backend using the appropriate script defined in `package.json`.
+5. Start the backend:
+
+   ```bash
+   npm start
+   ```
+
+The start command runs `node src/server.js`. Ensure the required environment variables and MongoDB connection are configured before starting the application.
 
 ## Environment Variables
 
