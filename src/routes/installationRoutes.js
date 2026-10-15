@@ -32,6 +32,7 @@ router.put(
 );
 
 const crudRouter = createCrudRoutes(controller, {
+  readRoles: ['admin', 'customer', 'technician'],
   createRoles: ['admin', 'customer'],
   updateRoles: ['admin', 'technician'],
   deleteRoles: ['admin'],

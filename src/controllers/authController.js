@@ -16,40 +16,44 @@ const toUserResponse = (user) => ({
 });
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, role = 'customer', phoneNumber, billingAddress } = req.body;
+  // Public registration must never choose its own role.
+  const { name, email, password, phoneNumber, billingAddress } = req.body;
 
   if (!name || !email || !password) {
     res.status(400);
     throw new Error('Name, email, and password are required');
   }
-  const normalizedEmail = email.toLowerCase();
-  const existingUser = await User.findOne({ email, normalizedEmail });
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existingUser = await User.findOne({
+    email: normalizedEmail
+  });
+
   if (existingUser) {
     res.status(409);
     throw new Error('User already exists');
   }
 
   const user = await User.create({
-    name,
+    name: name.trim(),
     email: normalizedEmail,
-    role,
+    role: 'customer',
     password: await User.hashPassword(password)
   });
-
-  if (role === 'customer') {
-    await Customer.create({ user: user._id, phoneNumber, billingAddress });
-  }
-
- if (role === 'technician') {
-  await Technician.create({
+  await Customer.create({
     user: user._id,
-    phone: phoneNumber
+    phoneNumber,
+    billingAddress
   });
-}
 
-  sendSuccess(res, toUserResponse(user), 'Registration successful', 201);
+ sendSuccess(
+    res,
+    toUserResponse(user),
+    'Registration successful',
+    201
+  );
 });
-
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -86,9 +90,103 @@ const updateProfile = asyncHandler(async (req, res) => {
   sendSuccess(res, toUserResponse(user), 'Profile updated');
 });
 
+const createTechnicianAccount = asyncHandler(async (req, res) => {
+  const {
+    name,
+    email,
+    password,
+    phoneNumber,
+    specialization = "both",
+    certifications = [],
+  } = req.body;
+
+  if (!name || !email || !password) {
+    res.status(400);
+    throw new Error("Name, email, and password are required");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (await User.findOne({ email: normalizedEmail })) {
+    res.status(409);
+    throw new Error("User already exists");
+  }
+
+  const user = await User.create({
+    name: name.trim(),
+    email: normalizedEmail,
+    password: await User.hashPassword(password),
+    role: "technician",
+  });
+
+  try {
+    const technician = await Technician.create({
+      user: user._id,
+      phone: phoneNumber,
+      specialization,
+      certifications,
+    });
+
+    return sendSuccess(
+      res,
+      {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+        technician,
+      },
+      "Technician account created successfully",
+      201
+    );
+  } catch (error) {
+    await User.findByIdAndDelete(user._id);
+    throw error;
+  }
+});
+
+const createAdminAccount = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    res.status(400);
+    throw new Error("Name, email, and password are required");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (await User.findOne({ email: normalizedEmail })) {
+    res.status(409);
+    throw new Error("User already exists");
+  }
+
+  const user = await User.create({
+    name: name.trim(),
+    email: normalizedEmail,
+    password: await User.hashPassword(password),
+    role: "admin",
+  });
+
+  return sendSuccess(
+    res,
+    {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+    "Admin account created successfully",
+    201
+  );
+});
+
 module.exports = {
   registerUser,
   loginUser,
   getProfile,
-  updateProfile
+  updateProfile,
+  createTechnicianAccount,
+  createAdminAccount,
 };

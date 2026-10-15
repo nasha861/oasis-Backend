@@ -137,6 +137,47 @@ controller.getMyMaintenance = async (req, res) => {
   }
 };
 
+controller.getMyAssignedMaintenance = async (req, res) => {
+  try {
+    const technician = await Technician.findOne({
+      user: req.user._id
+    });
+
+    if (!technician) {
+      return res.status(404).json({
+        success: false,
+        message: 'Technician profile not found'
+      });
+    }
+
+    const maintenance = await Maintenance.find({
+      technician: technician._id
+    })
+      .populate('installation')
+      .populate({
+        path: 'technician',
+        populate: {
+          path: 'user',
+          select: 'name email'
+        }
+      })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: maintenance,
+      message: 'Assigned maintenance jobs fetched'
+    });
+  } catch (error) {
+    console.error('Assigned maintenance fetch error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch assigned maintenance jobs'
+    });
+  }
+};
+
 controller.assignTechnician = async (req, res) => {
   try {
     const { technicianId } = req.body;
@@ -145,17 +186,6 @@ controller.assignTechnician = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'technicianId is required'
-      });
-    }
-
-    const technician = await Technician.findById(
-      technicianId
-    );
-
-    if (!technician) {
-      return res.status(404).json({
-        success: false,
-        message: 'Technician not found'
       });
     }
 
@@ -170,29 +200,70 @@ controller.assignTechnician = async (req, res) => {
       });
     }
 
+    const technician = await Technician.findById(
+      technicianId
+    );
+
+    if (!technician) {
+      return res.status(404).json({
+        success: false,
+        message: 'Technician not found'
+      });
+    }
+
+    const oldTechnicianId = maintenance.technician
+      ? String(maintenance.technician)
+      : null;
+
+    const newTechnicianId = String(technician._id);
+
+    // Remove this request from the previous technician
+    // if the assignment is changing.
+    if (
+      oldTechnicianId &&
+      oldTechnicianId !== newTechnicianId
+    ) {
+      const oldTechnician = await Technician.findById(
+        oldTechnicianId
+      );
+
+      if (oldTechnician) {
+        oldTechnician.assignedMaintenance =
+          oldTechnician.assignedMaintenance.filter(
+            id => String(id) !== String(maintenance._id)
+          );
+
+        if (
+          oldTechnician.assignedMaintenance.length === 0 &&
+          oldTechnician.assignedInstallations.length === 0
+        ) {
+          oldTechnician.status = 'available';
+        } else {
+          oldTechnician.status = 'busy';
+        }
+
+        await oldTechnician.save();
+      }
+    }
+
     maintenance.technician = technician._id;
     maintenance.status = 'assigned';
 
-    await maintenance.save();
-
     if (
-      !technician.assignedMaintenance.includes(
-        maintenance._id
+      !technician.assignedMaintenance.some(
+        id => String(id) === String(maintenance._id)
       )
     ) {
-      technician.assignedMaintenance.push(
-        maintenance._id
-      );
+      technician.assignedMaintenance.push(maintenance._id);
     }
 
     technician.status = 'busy';
 
+    await maintenance.save();
     await technician.save();
 
     const updatedMaintenance =
-      await Maintenance.findById(
-        maintenance._id
-      )
+      await Maintenance.findById(maintenance._id)
         .populate('installation')
         .populate({
           path: 'technician',
@@ -202,7 +273,7 @@ controller.assignTechnician = async (req, res) => {
           }
         });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: updatedMaintenance,
       message: 'Technician assigned successfully'
@@ -214,7 +285,7 @@ controller.assignTechnician = async (req, res) => {
       error
     );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to assign technician',
       error: error.message
@@ -222,16 +293,9 @@ controller.assignTechnician = async (req, res) => {
   }
 };
 
-controller.updateTechnicianStatus = async (
-  req,
-  res
-) => {
+controller.updateTechnicianStatus = async (req, res) => {
   try {
-    const {
-      status,
-      completionNotes,
-      scheduledDate
-    } = req.body;
+    const { status, completionNotes, scheduledDate } = req.body;
 
     const allowedStatuses = [
       'scheduled',
@@ -239,18 +303,14 @@ controller.updateTechnicianStatus = async (
       'completed'
     ];
 
-    if (
-      !status ||
-      !allowedStatuses.includes(status)
-    ) {
+    if (!status || !allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid maintenance status'
       });
     }
 
-    const maintenance =
-      await Maintenance.findById(req.params.id);
+    const maintenance = await Maintenance.findById(req.params.id);
 
     if (!maintenance) {
       return res.status(404).json({
@@ -259,10 +319,9 @@ controller.updateTechnicianStatus = async (
       });
     }
 
-    const technician =
-      await Technician.findOne({
-        user: req.user._id
-      });
+    const technician = await Technician.findOne({
+      user: req.user._id
+    });
 
     if (!technician) {
       return res.status(403).json({
@@ -273,14 +332,12 @@ controller.updateTechnicianStatus = async (
 
     const isAssigned =
       maintenance.technician &&
-      String(maintenance.technician) ===
-        String(technician._id);
+      String(maintenance.technician) === String(technician._id);
 
     if (!isAssigned) {
       return res.status(403).json({
         success: false,
-        message:
-          'You are not assigned to this maintenance request'
+        message: 'You are not assigned to this maintenance request'
       });
     }
 
@@ -290,61 +347,57 @@ controller.updateTechnicianStatus = async (
       maintenance.scheduledDate = scheduledDate;
     }
 
-    if (completionNotes) {
-      maintenance.completionNotes =
-        completionNotes;
+    if (completionNotes !== undefined) {
+      maintenance.completionNotes = completionNotes;
     }
 
     await maintenance.save();
 
     if (status === 'completed') {
-      technician.status = 'available';
-
       technician.assignedMaintenance =
         technician.assignedMaintenance.filter(
-          id =>
-            String(id) !==
-            String(maintenance._id)
+          id => String(id) !== String(maintenance._id)
         );
+
+      if (
+        technician.assignedMaintenance.length === 0 &&
+        technician.assignedInstallations.length === 0
+      ) {
+        technician.status = 'available';
+      } else {
+        technician.status = 'busy';
+      }
 
       await technician.save();
     }
 
-    const updatedMaintenance =
-      await Maintenance.findById(
-        maintenance._id
-      )
-        .populate('installation')
-        .populate({
-          path: 'technician',
-          populate: {
-            path: 'user',
-            select: 'name email'
-          }
-        });
+    const updatedMaintenance = await Maintenance.findById(
+      maintenance._id
+    )
+      .populate('installation')
+      .populate({
+        path: 'technician',
+        populate: {
+          path: 'user',
+          select: 'name email'
+        }
+      });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: updatedMaintenance,
-      message:
-        'Technician status updated successfully'
+      message: 'Technician status updated successfully'
     });
-
   } catch (error) {
-    console.error(
-      'Technician status update error:',
-      error
-    );
+    console.error('Technician status update error:', error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message:
-        'Failed to update maintenance status',
+      message: 'Failed to update maintenance status',
       error: error.message
     });
   }
 };
-
 
 /* ==========================================
    ADMIN MAINTENANCE MANAGEMENT

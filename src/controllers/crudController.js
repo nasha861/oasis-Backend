@@ -19,7 +19,6 @@ const createCrudController = (Model, options = {}) => {
   return {
     create: asyncHandler(async (req, res) => {
       const data = { ...req.body };
-      console.log('CRUD create request user:', req.user);
 
       const userId = req.user?._id;
 

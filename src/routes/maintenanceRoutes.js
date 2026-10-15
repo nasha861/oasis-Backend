@@ -63,6 +63,12 @@ const crudRouter = createCrudRoutes(
     validators: modelValidators.maintenance
   }
 );
+router.get(
+    '/my-assigned',
+    protect,
+    authorize('technician'),
+    controller.getMyAssignedMaintenance
+  );
 router.use(crudRouter);
 
 /* ==========================================
