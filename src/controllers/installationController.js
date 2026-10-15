@@ -194,10 +194,104 @@ const updateInstallationManagement = asyncHandler(
     });
   }
 );
+const updateInstallation = asyncHandler(async (req, res, next) => {
+  // Admins retain the existing CRUD update behavior.
+  if (req.user.role === 'admin') {
+    return crudController.update(req, res, next);
+  }
 
+  // Find the technician profile belonging to this user.
+  const technician = await Technician.findOne({
+    user: req.user._id
+  });
 
+  if (!technician) {
+    res.status(403);
+    throw new Error('Technician profile not found');
+  }
+
+  const installation = await Installation.findById(req.params.id);
+
+  if (!installation) {
+    res.status(404);
+    throw new Error('Installation not found');
+  }
+
+  // A technician may update only jobs assigned to them.
+  const isAssigned = installation.technicians.some(
+    id => String(id) === String(technician._id)
+  );
+
+  if (!isAssigned) {
+    res.status(403);
+    throw new Error('You are not assigned to this installation');
+  }
+
+  // Safely handle requests without a body.
+  const body = req.body || {};
+
+  // Technicians may change only status and notes.
+  const allowedFields = ['status', 'note'];
+  const submittedFields = Object.keys(body);
+  if (submittedFields.length === 0) {
+  res.status(400);
+  throw new Error('Please provide at least one field to update');
+}
+  const invalidField = submittedFields.find(
+    field => !allowedFields.includes(field)
+  );
+
+  if (invalidField) {
+    res.status(403);
+    throw new Error(
+      `Technicians cannot update the ${invalidField} field`
+    );
+  }
+
+  if (body.status !== undefined) {
+    const allowedStatuses = [
+      'survey',
+      'pending',
+      'in-progress',
+      'completed'
+    ];
+
+    if (!allowedStatuses.includes(body.status)) {
+      res.status(400);
+      throw new Error('Invalid installation status');
+    }
+
+    installation.status = body.status;
+  }
+
+  if (body.note !== undefined) {
+    installation.note = body.note;
+  }
+
+  await installation.save();
+
+  const updatedInstallation = await Installation.findById(
+    installation._id
+  )
+    .populate('customer')
+    .populate('systemPackage')
+    .populate({
+      path: 'technicians',
+      populate: {
+        path: 'user',
+        select: 'name email'
+      }
+    });
+
+  res.status(200).json({
+    success: true,
+    message: 'Installation updated successfully',
+    data: updatedInstallation
+  });
+});
 module.exports = {
   ...crudController,
   create: createInstallation,
+  update: updateInstallation,
   updateInstallationManagement
 };
